@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GoldBot Pro v3 — Deriv API</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap');
+
+  :root {
+    --gold: #00C9A7;
+    --gold-dim: #007A65;
+    --green: #00e676;
+    --red: #ff1744;
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a24;
+    --border: #2a2a3a;
+    --text: #e0e0f0;
+    --muted: #6060a0;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,184,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,184,0,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--gold);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    animation: pulse-gold 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,184,0,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(255,184,0,0); }
+  }
+
+  .logo-text { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .logo-sub { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 2px; }
+
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all 0.3s;
+  }
+  .status-dot.running { background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 1s infinite; }
+  .status-dot.error { background: var(--red); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* CARDS */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* TOKEN INPUT */
+  .token-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 8px;
+  }
+
+  .token-input:focus { border-color: var(--gold); }
+  .token-input::placeholder { color: var(--muted); }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+  .setting-group label {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .setting-group select,
+  .setting-group input[type="number"] {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+  }
+
+  .setting-group select option { background: var(--bg2); }
+
+  /* METRICS */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .metric {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .metric-val.green { color: var(--green); }
+  .metric-val.red { color: var(--red); }
+  .metric-val.gold { color: var(--gold); }
+
+  .metric-label {
+    font-size: 9px;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* TP BARS */
+  .tp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  .tp-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .tp-card.active { border-color: var(--gold); background: rgba(255,184,0,0.05); }
+  .tp-card.won { border-color: var(--green); background: rgba(0,230,118,0.05); }
+  .tp-card.lost { border-color: var(--red); background: rgba(255,23,68,0.05); }
+
+  .tp-label { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; margin-bottom: 4px; }
+  .tp-val { font-size: 13px; font-family: var(--mono); font-weight: 600; color: var(--gold); }
+  .tp-duration { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+  /* SIGNAL BAR */
+  .signal-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .signal-badge {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .signal-badge.buy { background: rgba(0,230,118,0.15); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+  .signal-badge.sell { background: rgba(255,23,68,0.15); color: var(--red); border: 1px solid rgba(255,23,68,0.3); }
+  .signal-badge.wait { background: rgba(96,96,160,0.15); color: var(--muted); border: 1px solid var(--border); }
+
+  /* TRADE LOG */
+  .trade-log {
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .trade-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    font-size: 12px;
+    font-family: var(--mono);
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .trade-row:last-child { border-bottom: none; }
+  .trade-time { color: var(--muted); font-size: 10px; }
+  .trade-dir { font-size: 11px; padding: 2px 6px; border-radius: 3px; }
+  .trade-dir.rise { background: rgba(0,230,118,0.1); color: var(--green); }
+  .trade-dir.fall { background: rgba(255,23,68,0.1); color: var(--red); }
+  .trade-pnl { font-weight: 600; }
+  .trade-pnl.pos { color: var(--green); }
+  .trade-pnl.neg { color: var(--red); }
+  .trade-pnl.pending { color: var(--gold); }
+
+  /* BUTTONS */
+  .btn-run {
+    width: 100%;
+    padding: 14px;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-run:hover { background: #ffc933; transform: translateY(-1px); }
+  .btn-run:active { transform: scale(0.98); }
+  .btn-run:disabled { background: var(--bg3); color: var(--muted); cursor: not-allowed; transform: none; }
+
+  .btn-stop {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+
+  .btn-stop:hover { background: rgba(255,23,68,0.1); }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    background: var(--bg3);
+    border-radius: 4px;
+    height: 4px;
+    margin: 8px 0;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 1s linear;
+  }
+
+  /* LOSS GUARD */
+  .loss-guard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .loss-bar-wrap {
+    flex: 1;
+    margin: 0 10px;
+    background: var(--bg3);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .loss-bar-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 4px;
+    width: 100%;
+    transition: width 0.5s, background 0.5s;
+  }
+
+  /* LOG */
+  .log-entry {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(42,42,58,0.3);
+  }
+  .log-entry.info { color: var(--gold); }
+  .log-entry.success { color: var(--green); }
+  .log-entry.error { color: var(--red); }
+
+  .log-scroll {
+    max-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .tab-btn {
+    flex: 1;
+    padding: 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .tab-btn.active { background: rgba(255,184,0,0.1); border-color: var(--gold); color: var(--gold); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* PRICE TICKER */
+  .price-ticker {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--gold);
+    text-align: center;
+    padding: 8px 0;
+    letter-spacing: 2px;
+  }
+  .price-change {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  /* EMA INDICATOR */
+  .ema-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+  }
+  .ema-label { color: var(--muted); }
+  .ema-val { color: var(--text); }
+
+  .alert-box {
+    background: rgba(255,23,68,0.1);
+    border: 1px solid rgba(255,23,68,0.3);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--red);
+    display: none;
+    margin-bottom: 12px;
+  }
+
+  .connecting-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    display: none;
+  }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  var el = document.getElementById('tab-' + id);
+  if (el) el.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+</script>
+
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div class="logo-text">GOLDBOT <span style="color:var(--gold)">S&amp;R</span></div>
+        <div class="logo-sub">DERIV NEW API v3 • EMA 9/50 • TP1/TP2/TP3</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="status-dot" id="statusDot"></div>
+      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px" id="statusText">OFFLINE</div>
+    </div>
+  </div>
+
+  <!-- ALERT -->
+  <div class="alert-box" id="alertBox"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('settings', this)">Settings</button>
+    <button class="tab-btn" onclick="switchTab('trades', this)">Trades</button>
+    <button class="tab-btn" onclick="switchTab('log', this)">Log</button>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div class="tab-content active" id="tab-dashboard">
+
+    <!-- Price -->
+    <div class="card">
+      <div class="card-title"><span id='symbolLabel'>Gold / USD</span> — Live Price</div>
+      <div class="price-ticker" id="livePrice">—</div>
+      <div class="price-change" id="priceChange" style="color:var(--muted)">Connecting...</div>
+      <div class="progress-wrap"><div class="progress-fill" id="candleProgress"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--mono)">
+        <span>Candle: <span id="candleTimer">—</span></span>
+        <span>Spread: <span id="spreadVal">—</span></span>
+      </div>
+    </div>
+
+    <!-- Signal -->
+    <div class="card">
+      <div class="card-title">S&amp;R + Bollinger Signal</div>
+      <div class="signal-bar">
+        <div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Price vs Bollinger Bands</div>
+          <div id="emaSignalText" style="color:var(--text)">Waiting for data...</div>
+        </div>
+        <div class="signal-badge wait" id="signalBadge">WAIT</div>
+      </div>
+      <div class="ema-row">
+        <span class="ema-label">BB Upper</span>
+        <span class="ema-val" id="bbUpperVal">—</span>
+      </div>
+      <div class="ema-row">
+        <span class="ema-label">BB Lower</span>
+        <span class="ema-val" id="bbLowerVal">—</span>
+      </div>
+      <div class="ema-row" style="border:none">
+        <span class="ema-label">RSI 14</span>
+        <span class="ema-val" id="rsiVal">—</span>
+      </div>
+    </div>
+
+    <!-- TP Grid -->
+    <div class="card">
+      <div class="card-title">Active Trades — TP1 / TP2 / TP3</div>
+      <div class="tp-grid">
+        <div class="tp-card" id="tp1card">
+          <div class="tp-label">TP1</div>
+          <div class="tp-val" id="tp1status">—</div>
+          <div class="tp-duration">1 min</div>
+        </div>
+        <div class="tp-card" id="tp2card">
+          <div class="tp-label">TP2</div>
+          <div class="tp-val" id="tp2status">—</div>
+          <div class="tp-duration">3 min</div>
+        </div>
+        <div class="tp-card" id="tp3card">
+          <div class="tp-label">TP3</div>
+          <div class="tp-val" id="tp3status">—</div>
+          <div class="tp-duration">5 min</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-val gold" id="metBalance">—</div>
+        <div class="metric-label">Balance</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val" id="metPnl" style="color:var(--text)">$0.00</div>
+        <div class="metric-label">Today P&L</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val" id="metWR" style="color:var(--text)">—%</div>
+        <div class="metric-label">Win Rate</div>
+      </div>
+    </div>
+
+    <!-- Loss Guard -->
+    <div class="card">
+      <div class="card-title">Daily Loss Guard</div>
+      <div class="loss-guard">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">$0</span>
+        <div class="loss-bar-wrap">
+          <div class="loss-bar-fill" id="lossBar"></div>
+        </div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--red)" id="lossLimit">-$5</span>
+      </div>
+      <div style="text-align:center;font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:6px">
+        Daily loss today: <span id="dailyLossAmt" style="color:var(--text)">$0.00</span>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <button class="btn-run" id="btnRun" onclick="startBot()">▶ START BOT</button>
+    <button class="btn-stop" id="btnStop" onclick="stopBot()">■ STOP BOT</button>
+
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="tab-content" id="tab-settings">
+    <div class="card">
+      <div class="card-title">API Token</div>
+      <input type="password" class="token-input" id="apiToken" placeholder="Paste your Deriv API token here (stays private)">
+      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:6px">⚠ Never share your token. It lives only in your browser.</div>
+      <div style="font-size:10px;color:var(--gold);font-family:var(--mono);background:rgba(255,184,0,0.05);border:1px solid rgba(255,184,0,0.2);border-radius:6px;padding:8px;line-height:1.6">
+        🔗 Connection: New Deriv API (REST→OTP→WebSocket)<br>
+        Falls back to legacy WebSocket if needed.<br>
+        Both your App ID and Token are required.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Trade Settings</div>
+      <div class="input-row">
+        <div class="setting-group">
+          <label>Account Type</label>
+          <select id="accType">
+            <option value="demo">Demo</option>
+            <option value="real">Real</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>Stake ($)</label>
+          <input type="number" id="stakeAmt" value="1" min="0.35" max="100" step="0.5">
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="setting-group">
+          <label>Trading Symbol</label>
+          <select id="symbolSelect">
+            <option value="frxXAUUSD">Gold / USD</option>
+            <option value="frxEURUSD">EUR / USD</option>
+            <option value="frxGBPUSD">GBP / USD</option>
+            <option value="frxUSDJPY">USD / JPY</option>
+            <option value="frxAUDUSD">AUD / USD</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label>App ID (from developers.deriv.com)</label>
+          <input type="text" id="appIdInput" placeholder="Your alphanumeric App ID" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:12px;width:100%;outline:none">
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="setting-group">
+          <label>TP1 Duration (min)</label>
+          <input type="number" id="tp1min" value="1" min="1" max="10">
+        </div>
+        <div class="setting-group">
+          <label>TP2 Duration (min)</label>
+          <input type="number" id="tp2min" value="3" min="2" max="15">
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="setting-group">
+          <label>TP3 Duration (min)</label>
+          <input type="number" id="tp3min" value="5" min="3" max="30">
+        </div>
+        <div class="setting-group">
+          <label>Daily Loss Limit ($)</label>
+          <input type="number" id="lossLimitAmt" value="5" min="1" max="50">
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="setting-group">
+          <label>BB Period</label>
+          <input type="number" id="emaFast" value="20" min="3" max="20">
+        </div>
+        <div class="setting-group">
+          <label>BB Std Dev x10</label>
+          <input type="number" id="emaSlow" value="20" min="20" max="200">
+        </div>
+      </div>
+      <div class="setting-group" style="margin-top:8px">
+        <label>RSI Overbought / Oversold</label>
+        <div style="display:flex;gap:8px">
+          <input type="number" id="rsiOB" value="70" min="60" max="80" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none">
+          <input type="number" id="rsiOS" value="30" min="20" max="40" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-run" onclick="saveSettings()" style="margin-top:4px">💾 SAVE SETTINGS</button>
+  </div>
+
+  <!-- TRADES TAB -->
+  <div class="tab-content" id="tab-trades">
+    <div class="card">
+      <div class="card-title">Today's Summary</div>
+      <div class="metrics" style="margin-bottom:0">
+        <div class="metric">
+          <div class="metric-val green" id="sumWins">0</div>
+          <div class="metric-label">Wins</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val red" id="sumLosses">0</div>
+          <div class="metric-label">Losses</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val gold" id="sumTotal">$0</div>
+          <div class="metric-label">Net P&L</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Trade History</div>
+      <div class="trade-log" id="tradeLog">
+        <div style="text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;padding:20px">
+          No trades yet. Start the bot!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG TAB -->
+  <div class="tab-content" id="tab-log">
+    <div class="card">
+      <div class="card-title">System Log</div>
+      <div class="log-scroll" id="sysLog">
+        <div class="log-entry info">GoldBot Pro initialized. Configure settings and start.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CONNECTING OVERLAY -->
+<div class="connecting-overlay" id="connectOverlay">
+  <div class="spinner"></div>
+  <div style="font-family:var(--mono);color:var(--gold);letter-spacing:2px">CONNECTING...</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  GOLDBOT PRO — Deriv API Engine
+// ══════════════════════════════════════════════════
+
+// ── NEW DERIV API v2 CONNECTION SYSTEM ──────────────
+// Uses REST OTP endpoint → dynamic authenticated WebSocket URL
+const DERIV_REST_BASE = 'https://api.derivws.com';
+
+let ws = null;
+let isRunning = false;
+let isConnected = false;
+let priceHistory = [];
+let tradeLog = [];
+let dailyPnl = 0;
+let wins = 0;
+let losses = 0;
+let activeTrades = 0;
+let lastPrice = 0;
+let prevPrice = 0;
+let candleCloses = [];
+let lastSignal = 'wait';
+let candleCountdown = 60;
+let candleInterval = null;
+let balance = 0;
+let reqId = 1;
+let pendingTrades = {};
+
+// Settings
+let settings = {
+  token: '',
+  stake: 1,
+  tp1: 1,
+  tp2: 3,
+  tp3: 5,
+  lossLimit: 5,
+  emaFast: 9,
+  emaSlow: 50,
+  rsiOB: 70,
+  rsiOS: 30,
+  accType: 'demo',
+  symbol: 'frxXAUUSD',
+  appId: ''
+};
+
+// ── UI HELPERS ──────────────────────────────────
+
+function addLog(msg, type = 'default') {
+  const el = document.getElementById('sysLog');
+  const now = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = 'log-entry ' + type;
+  div.textContent = `[${now}] ${msg}`;
+  el.insertBefore(div, el.firstChild);
+  if (el.children.length > 50) el.removeChild(el.lastChild);
+}
+
+function showAlert(msg) {
+  const el = document.getElementById('alertBox');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function updateStatus(state) {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className = 'status-dot ' + state;
+  txt.textContent = state.toUpperCase();
+}
+
+function setTP(num, status, val) {
+  const card = document.getElementById('tp' + num + 'card');
+  const stat = document.getElementById('tp' + num + 'status');
+  card.className = 'tp-card ' + status;
+  stat.textContent = val;
+  if (status === 'won') stat.style.color = 'var(--green)';
+  else if (status === 'lost') stat.style.color = 'var(--red)';
+  else if (status === 'active') stat.style.color = 'var(--gold)';
+  else stat.style.color = 'var(--muted)';
+}
+
+function resetTPs() {
+  [1,2,3].forEach(n => setTP(n, '', '—'));
+}
+
+function saveSettings() {
+  settings.token    = document.getElementById('apiToken').value.trim();
+  settings.stake    = parseFloat(document.getElementById('stakeAmt').value) || 1;
+  settings.tp1      = parseInt(document.getElementById('tp1min').value) || 1;
+  settings.tp2      = parseInt(document.getElementById('tp2min').value) || 3;
+  settings.tp3      = parseInt(document.getElementById('tp3min').value) || 5;
+  settings.lossLimit = parseFloat(document.getElementById('lossLimitAmt').value) || 5;
+  settings.emaFast  = parseInt(document.getElementById('emaFast').value) || 9;
+  settings.emaSlow  = parseInt(document.getElementById('emaSlow').value) || 50;
+  settings.rsiOB    = parseInt(document.getElementById('rsiOB').value) || 70;
+  settings.rsiOS    = parseInt(document.getElementById('rsiOS').value) || 30;
+  settings.accType  = document.getElementById('accType').value;
+  settings.symbol   = document.getElementById('symbolSelect').value;
+  settings.appId    = document.getElementById('appIdInput') ? document.getElementById('appIdInput').value.trim() : '';
+  document.getElementById('lossLimit').textContent = '-$' + settings.lossLimit;
+  const symNames = {'frxXAUUSD':'Gold/USD','frxEURUSD':'EUR/USD','frxGBPUSD':'GBP/USD','frxUSDJPY':'USD/JPY','frxAUDUSD':'AUD/USD'};
+  const lbl = document.getElementById('symbolLabel'); if(lbl) lbl.textContent = symNames[settings.symbol] || settings.symbol;
+  addLog('Settings saved.', 'info');
+  switchTab('dashboard', document.querySelector('.tab-btn'));
+  // Update tab button manually
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', i===0);
+  });
+}
+
+// ── EMA CALCULATION ──────────────────────────────
+function calcEMA(data, period) {
+  if (data.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  for (let i = period; i < data.length; i++) {
+    ema = data[i] * k + ema * (1 - k);
+  }
+  return ema;
+}
+
+function calcRSI(data, period = 14) {
+  if (data.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = data.length - period; i < data.length; i++) {
+    const diff = data[i] - data[i - 1];
+    if (diff > 0) gains += diff;
+    else losses -= diff;
+  }
+  const rs = gains / (losses || 0.0001);
+  return 100 - 100 / (1 + rs);
+}
+
+// ── Previous EMA values for crossover detection ──
+let prevEma9  = null;
+let prevEma50 = null;
+let crossoverSignal = 'wait'; // last confirmed crossover direction
+let crossoverFired = false;   // has this crossover already triggered a trade?
+
+function analyzeSignal() {
+  if (candleCloses.length < 25) return 'wait';
+
+  // ── Bollinger Bands (period 20, 2 std dev) ──
+  const period = settings.emaFast || 20;
+  const stdMult = (settings.emaSlow || 20) / 10; // e.g. 20 = 2.0 std dev
+  const slice = candleCloses.slice(-period);
+  const mean = slice.reduce((a,b) => a+b, 0) / period;
+  const variance = slice.reduce((a,b) => a + Math.pow(b-mean, 2), 0) / period;
+  const stdDev = Math.sqrt(variance);
+  const bbUpper = mean + stdMult * stdDev;
+  const bbLower = mean - stdMult * stdDev;
+  const bbMid   = mean;
+  const price   = candleCloses[candleCloses.length - 1];
+  const prevPrice = candleCloses[candleCloses.length - 2];
+
+  // ── RSI ──
+  const rsi = calcRSI(candleCloses, 14);
+
+  // ── Update UI ──
+  const bbUpperEl = document.getElementById('bbUpperVal');
+  const bbLowerEl = document.getElementById('bbLowerVal');
+  if (bbUpperEl) bbUpperEl.textContent = bbUpper.toFixed(2);
+  if (bbLowerEl) bbLowerEl.textContent = bbLower.toFixed(2);
+  if (rsi !== null) {
+    const rsiEl = document.getElementById('rsiVal');
+    if (rsiEl) rsiEl.textContent = rsi.toFixed(1);
+  }
+
+  const badge  = document.getElementById('signalBadge');
+  const sigTxt = document.getElementById('emaSignalText');
+
+  // ── BUY: price touches/crosses below lower BB + RSI oversold recovery ──
+  // Price was below lower band and is now bouncing back up
+  const buySignal  = prevPrice <= bbLower && price > bbLower && rsi !== null && rsi < settings.rsiOB;
+
+  // ── SELL: price touches/crosses above upper BB + RSI overbought ──
+  // Price was above upper band and is now reversing down
+  const sellSignal = prevPrice >= bbUpper && price < bbUpper && rsi !== null && rsi > settings.rsiOS;
+
+  if (buySignal) {
+    if (badge)  { badge.className = 'signal-badge buy'; badge.textContent = 'BUY'; }
+    if (sigTxt) { sigTxt.textContent = 'Price bouncing off lower BB — oversold'; sigTxt.style.color = 'var(--green)'; }
+    return 'rise';
+  } else if (sellSignal) {
+    if (badge)  { badge.className = 'signal-badge sell'; badge.textContent = 'SELL'; }
+    if (sigTxt) { sigTxt.textContent = 'Price rejected at upper BB — overbought'; sigTxt.style.color = 'var(--red)'; }
+    return 'fall';
+  } else {
+    if (badge)  { badge.className = 'signal-badge wait'; badge.textContent = 'WAIT'; }
+    if (sigTxt) { sigTxt.textContent = 'Price inside bands — no signal yet...'; sigTxt.style.color = 'var(--muted)'; }
+    return 'wait';
+  }
+}
+
+
+function connectLegacyWS() {
+  const appId = settings.appId || '16303';
+  const urls = [
+    'wss://ws.derivws.com/websockets/v3?app_id=' + appId,
+    'wss://ws.binaryws.com/websockets/v3?app_id=' + appId,
+  ];
+  addLog('Legacy mode: App ID = ' + appId, 'info');
+  openWebSocket(urls[0], false, urls);
+}
+
+// ── Shared WebSocket opener ───────────────────────
+function openWebSocket(url, preAuthed, fallbackUrls) {
+  ws = new WebSocket(url);
+  ws._preAuthed = preAuthed;
+  ws._fallbackUrls = fallbackUrls || [];
+
+  ws.onopen = () => {
+    isConnected = true;
+    updateStatus('running');
+    if (preAuthed) {
+      // New API: URL is pre-authenticated, go straight to data
+      addLog('Connected (new API). Fetching balance & market data...', 'success');
+      onAuthorized();
+    } else {
+      // Legacy API: send token to authorize
+      addLog('Connected (legacy). Authorizing...', 'success');
+      send({ authorize: settings.token });
+    }
+  };
+
+  ws.onclose = () => {
+    isConnected = false;
+    updateStatus('error');
+    addLog('Connection closed.', 'error');
+    if (isRunning) {
+      addLog('Reconnecting in 5s...', 'info');
+      setTimeout(connectWS, 5000);
+    }
+  };
+
+  ws.onerror = () => {
+    addLog('WebSocket error.', 'error');
+    if (ws._fallbackUrls && ws._fallbackUrls.length > 1) {
+      ws._fallbackUrls.shift();
+      addLog('Trying: ' + ws._fallbackUrls[0], 'info');
+      openWebSocket(ws._fallbackUrls[0], false, ws._fallbackUrls);
+    } else {
+      showAlert('Connection failed. Check token, App ID and internet.');
+      stopBot();
+    }
+  };
+
+  ws.onmessage = (e) => {
+    handleMessage(JSON.parse(e.data));
+  };
+}
+
+// Called once authenticated (either path)
+function onAuthorized() {
+  send({ balance: 1, subscribe: 1 });
+  send({ ticks: settings.symbol, subscribe: 1 });
+  send({
+    ticks_history: settings.symbol,
+    end: 'latest',
+    count: 200,
+    style: 'candles',
+    granularity: 60
+  });
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const id = reqId++;
+    obj.req_id = id;
+    ws.send(JSON.stringify(obj));
+    return id;
+  }
+}
+
+function handleMessage(data) {
+  if (data.error) {
+    addLog('API Error [' + (data.error.code||'') + ']: ' + data.error.message, 'error'); showAlert('['+(data.error.code||'?')+'] ' + data.error.message); if(data.error.code==='InvalidToken'||data.error.code==='AuthorizationRequired'){isRunning=false;stopBot();}
+    return;
+  }
+
+  // Auth success (legacy WS path only — new API is pre-authenticated)
+  if (data.authorize) {
+    balance = data.authorize.balance;
+    document.getElementById('metBalance').textContent = '$' + parseFloat(balance).toFixed(2);
+    addLog('Authorized ✓ Balance: $' + balance, 'success');
+    onAuthorized();
+  }
+
+  // Candle history received
+  if (data.candles) {
+    candleCloses = data.candles.map(c => parseFloat(c.close));
+    addLog('Loaded ' + candleCloses.length + ' candles for EMA.', 'info');
+    analyzeSignal();
+  }
+
+  // Live tick
+  if (data.tick) {
+    const tick = data.tick;
+    prevPrice = lastPrice;
+    lastPrice = parseFloat(tick.quote);
+
+    // Update price display
+    document.getElementById('livePrice').textContent = lastPrice.toFixed(2);
+    const change = lastPrice - prevPrice;
+    const changeEl = document.getElementById('priceChange');
+    if (change > 0) {
+      changeEl.style.color = 'var(--green)';
+      changeEl.textContent = '▲ +' + change.toFixed(2);
+    } else if (change < 0) {
+      changeEl.style.color = 'var(--red)';
+      changeEl.textContent = '▼ ' + change.toFixed(2);
+    }
+
+    // Add to candle closes (simplified — use every 60th tick as close)
+    priceHistory.push(lastPrice);
+    if (priceHistory.length % 10 === 0) {
+      candleCloses.push(lastPrice);
+      if (candleCloses.length > 300) candleCloses.shift();
+      lastSignal = analyzeSignal();
+    }
+
+    // Spread
+    if (tick.ask && tick.bid) {
+      const spread = (tick.ask - tick.bid).toFixed(2);
+      document.getElementById('spreadVal').textContent = spread;
+    }
+
+    // Auto trade ONLY on fresh crossover signal (not every tick)
+    if (isRunning && activeTrades === 0 && lastSignal !== 'wait' && !crossoverFired && canTrade()) {
+      crossoverFired = true; // mark this crossover as used — won't fire again until next cross
+      placeTrades(lastSignal);
+    }
+  }
+
+  // Proposal received — now buy using the proposal ID
+  // New API sends msg_type:'proposal' OR data.proposal
+  if (data.msg_type === 'proposal' || data.proposal) {
+    const tp = pendingProposals[data.req_id];
+    const proposalId = data.proposal && data.proposal.id;
+    if (tp && proposalId) {
+      addLog('Proposal TP' + tp + ' received (id:' + proposalId.slice(0,8) + '). Buying...', 'info');
+      const buyId = send({
+        buy: proposalId,
+        price: settings.stake
+      });
+      pendingTrades[buyId] = tp;
+    } else if (tp && !proposalId) {
+      addLog('Proposal TP' + tp + ' error — no ID. Raw: ' + JSON.stringify(data).slice(0,150), 'error');
+    }
+    return;
+  }
+
+  // Trade result
+  if (data.buy) {
+    const contract_id = data.buy.contract_id;
+    const tp = pendingTrades[data.req_id];
+    addLog('Trade placed: TP' + (tp || '?') + ' | ID: ' + contract_id, 'success');
+    if (tp) setTP(tp, 'active', '⏳');
+    // Subscribe to contract updates
+    send({ proposal_open_contract: 1, contract_id: contract_id, subscribe: 1 });
+  }
+
+  // Contract update (win/loss)
+  if (data.proposal_open_contract) {
+    const c = data.proposal_open_contract;
+    if (c.status === 'won' || c.status === 'lost') {
+      const profit = parseFloat(c.profit);
+      dailyPnl += profit;
+      if (profit > 0) {
+        wins++;
+        addLog('WIN! Profit: $' + profit.toFixed(2), 'success');
+      } else {
+        losses++;
+        addLog('Loss: $' + profit.toFixed(2), 'error');
+      }
+      activeTrades = Math.max(0, activeTrades - 1);
+      updateMetrics();
+      addTradeToLog(c.contract_type, profit, c.status);
+
+      // Check daily loss limit
+      if (dailyPnl <= -settings.lossLimit) {
+        addLog('Daily loss limit reached! Bot stopping.', 'error');
+        showAlert('⛔ Daily loss limit of $' + settings.lossLimit + ' reached. Bot stopped for today.');
+        stopBot();
+      }
+    }
+  }
+
+  // Balance update
+  if (data.balance) {
+    balance = data.balance.balance;
+    document.getElementById('metBalance').textContent = '$' + parseFloat(balance).toFixed(2);
+  }
+}
+
+
+// ===== GoldBot Pro v2 Safety Filters =====
+let lastTradeCandle = -1;
+let tradeCooldown = false;
+let lastTradeTime = 0;
+
+// Spread limit (can be adjusted)
+const MAX_SPREAD = 3.0;
+
+// Minimum volatility threshold
+const MIN_VOL = 0.3;
+
+function canTrade() {
+
+  if (tradeCooldown) return false;
+
+  // Prevent multiple trades per candle
+  if (priceHistory.length === lastTradeCandle) {
+    return false;
+  }
+
+  // Spread filter
+  const spreadTxt = document.getElementById('spreadVal').textContent;
+  const spread = parseFloat(spreadTxt);
+  if (!isNaN(spread) && spread > MAX_SPREAD) {
+    addLog('Spread too high: ' + spread, 'info');
+    return false;
+  }
+
+  // Volatility filter
+  if (priceHistory.length > 20) {
+    const recent = priceHistory.slice(-20);
+    const max = Math.max(...recent);
+    const min = Math.min(...recent);
+    const vol = max - min;
+    if (vol < MIN_VOL) {
+      addLog('Low volatility detected.', 'info');
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+// ── TRADE EXECUTION ──────────────────────────────
+// New Deriv API requires: proposal first → then buy with proposal ID
+let pendingProposals = {}; // req_id → tp number
+
+function placeTrades(direction) {
+  if (dailyPnl <= -settings.lossLimit) return;
+  activeTrades = 3;
+  resetTPs();
+  addLog('Signal: ' + direction.toUpperCase() + ' — Placing TP1/TP2/TP3 trades...', 'info');
+  lastTradeCandle = priceHistory.length;
+  tradeCooldown = true;
+  lastTradeTime = Date.now();
+  setTimeout(()=>{ tradeCooldown = false; }, 30000);
+
+  const contractType = direction === 'rise' ? 'CALL' : 'PUT';
+  const durations = [settings.tp1, settings.tp2, settings.tp3];
+
+  durations.forEach((dur, idx) => {
+    const tp = idx + 1;
+    setTP(tp, 'active', '⏳');
+    // Step 1: Request a proposal (price quote) first
+    const id = send({
+      proposal: 1,
+      amount: settings.stake,
+      basis: 'stake',
+      contract_type: contractType,
+      currency: 'USD',
+      duration: dur * 60,
+      duration_unit: 's',
+      underlying_symbol: settings.symbol
+    });
+    pendingProposals[id] = tp;
+  });
+}
+
+function addTradeToLog(type, profit, status) {
+  const container = document.getElementById('tradeLog');
+  if (container.children.length === 1 && container.children[0].tagName !== 'DIV'.includes('trade-row')) {
+    container.innerHTML = '';
+  }
+  const now = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = 'trade-row';
+  const isWin = profit > 0;
+  const tpNum = activeTrades;
+  div.innerHTML = `
+    <span class="trade-time">${now}</span>
+    <span class="trade-dir ${type.includes('CALL') ? 'rise' : 'fall'}">${type.includes('CALL') ? '▲ RISE' : '▼ FALL'}</span>
+    <span class="trade-pnl ${isWin ? 'pos' : 'neg'}">${isWin ? '+' : ''}$${profit.toFixed(2)}</span>
+  `;
+
+  // Update TP cards
+  const tpIdx = 3 - activeTrades;
+  if (tpIdx >= 1 && tpIdx <= 3) {
+    setTP(tpIdx, isWin ? 'won' : 'lost', isWin ? '+$' + profit.toFixed(2) : '$' + profit.toFixed(2));
+  }
+
+  container.insertBefore(div, container.firstChild);
+  if (container.children.length > 30) container.removeChild(container.lastChild);
+}
+
+function updateMetrics() {
+  const total = wins + losses;
+  const wr = total > 0 ? Math.round(wins / total * 100) : 0;
+  const pnlEl = document.getElementById('metPnl');
+  pnlEl.textContent = (dailyPnl >= 0 ? '+' : '') + '$' + dailyPnl.toFixed(2);
+  pnlEl.style.color = dailyPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('metWR').textContent = wr + '%';
+  document.getElementById('metWR').style.color = wr >= 60 ? 'var(--green)' : wr >= 50 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('sumWins').textContent = wins;
+  document.getElementById('sumLosses').textContent = losses;
+  document.getElementById('sumTotal').textContent = (dailyPnl >= 0 ? '+' : '') + '$' + dailyPnl.toFixed(2);
+  document.getElementById('sumTotal').style.color = dailyPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('dailyLossAmt').textContent = '$' + Math.abs(dailyPnl).toFixed(2);
+
+  // Loss bar
+  const pct = Math.max(0, 100 - (Math.abs(Math.min(0, dailyPnl)) / settings.lossLimit * 100));
+  const bar = document.getElementById('lossBar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 60 ? 'var(--green)' : pct > 30 ? 'var(--gold)' : 'var(--red)';
+}
+
+// ── CANDLE COUNTDOWN ─────────────────────────────
+function startCandleTimer() {
+  candleCountdown = 60;
+  clearInterval(candleInterval);
+  candleInterval = setInterval(() => {
+    candleCountdown--;
+    if (candleCountdown <= 0) candleCountdown = 60;
+    document.getElementById('candleTimer').textContent = candleCountdown + 's';
+    const pct = ((60 - candleCountdown) / 60) * 100;
+    document.getElementById('candleProgress').style.width = pct + '%';
+  }, 1000);
+}
+
+// ── START / STOP ──────────────────────────────────
+function startBot() {
+  settings.token = document.getElementById('apiToken').value.trim();
+  if (!settings.token) {
+    showAlert('Please enter your API token in the Settings tab first!');
+    switchTab('settings', document.querySelectorAll('.tab-btn')[1]);
+    document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===1));
+    return;
+  }
+  saveSettings();
+  isRunning = true;
+  activeTrades = 0;
+  document.getElementById('btnRun').style.display = 'none';
+  document.getElementById('btnStop').style.display = 'block';
+  addLog('Bot starting...', 'info');
+  startCandleTimer();
+  connectWS();
+}
+
+function stopBot() {
+  isRunning = false;
+  if (ws) { ws.close(); ws = null; }
+  clearInterval(candleInterval);
+  updateStatus('error');
+  document.getElementById('btnRun').style.display = 'block';
+  document.getElementById('btnStop').style.display = 'none';
+  addLog('Bot stopped.', 'error');
+}
+
+// Init
+updateMetrics();
+addLog('GoldBot S&R ready. Strategy: Bollinger Band bounce + RSI filter.', 'info');
+addLog('BUY when price bounces off lower BB. SELL when rejected at upper BB.', 'info');
+</script>
+</body>
+</html>
